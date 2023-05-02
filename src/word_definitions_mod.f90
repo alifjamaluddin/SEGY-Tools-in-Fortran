@@ -17,17 +17,17 @@
 ! ---------------------------------------------------------------------------
 
 
-module word_definitions_mod
+module WordDefinitionModule
 
-  integer(kind=4), parameter::n_ebcdich=3200,&
-       n_binaryh=400,&
-       n_traceh=240
+  integer(kind=4), parameter::EBCDIC_HEADER_SIZE=3200,&
+       BINARY_HEADER_SIZE=400,&
+       TRACE_HEADER_SIZE=240
   
   !ebcdic_reel=========================================================
 
-  character(len=1), dimension(n_ebcdich)::ebcdich
+  character(len=1), dimension(EBCDIC_HEADER_SIZE)::ebcdich
 
-  integer(kind=2), parameter, dimension(256)::ebcdic_table = [&
+  integer(kind=2), parameter, dimension(256)::EBCDIC_TABLE = [&
        000,001,002,003,156,009,134,127,151,141,142,011,012,013,014,015,&
        016,017,018,019,157,133,008,135,024,025,146,143,028,029,030,031,&
        128,129,130,131,132,010,023,027,136,137,138,139,140,005,006,007,&
@@ -49,12 +49,12 @@ module word_definitions_mod
   
   !binary_reel words===================================================
 
-  integer(kind=4), dimension(n_binaryh)::binaryh
+  integer(kind=4), dimension(BINARY_HEADER_SIZE)::binaryh
    
-  integer(kind=4), dimension(27), parameter::bw_bsize=&
+  integer(kind=4), dimension(27), parameter::BINARY_WORD_BYTE_SIZE=&
        (/4,4,4,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2/)
   
-  character(len=10), dimension(27), parameter::bw_name=&
+  character(len=10), dimension(27), parameter::BINARY_WORD_NAME=&
        (/ character(len=10)::&
        'jid',&
        'ln',&
@@ -87,9 +87,9 @@ module word_definitions_mod
   
   !trace_reel words=====================================================
   
-  integer(kind=4), dimension(n_traceh)::traceh
+  integer(kind=4), dimension(TRACE_HEADER_SIZE)::traceh
   
-  integer(kind=4), dimension(71), parameter::tw_bsize=&
+  integer(kind=4), dimension(71), parameter::TRACE_WORD_BYTE_SIZE=&
        (/4,4,4,4,4,4,4,&
        2,2,2,2,&
        4,4,4,4,4,4,4,4,&
@@ -99,7 +99,7 @@ module word_definitions_mod
        2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,&
        2,2,2,2,2,2 /)
 
-  character(len=10), dimension(71), parameter::tw_name=&
+  character(len=10), dimension(71), parameter::TRACE_WORD_NAME=&
        (/ character(len=10)::&
        'trnl',&
        'trnr',&
@@ -173,4 +173,4 @@ module word_definitions_mod
        'gs',&
        'oat'/)
 
-end module word_definitions_mod
+end module WordDefinitionModule

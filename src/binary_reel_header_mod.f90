@@ -17,36 +17,36 @@
 ! ---------------------------------------------------------------------------
 
 
-module binary_reel_header_mod
+module BinaryReelHeaderModule
 
-  use word_definitions_mod, only:bw_name,&
-       bw_bsize,&
-       n_ebcdich,&
-       n_binaryh
-  use read_segy_tools_mod, only:check_open_segy_file
+  use WordDefinitionModule, only:BINARY_WORD_NAME,&
+       BINARY_WORD_BYTE_SIZE,&
+       EBCDIC_HEADER_SIZE,&
+       BINARY_HEADER_SIZE
+  use ReadSegyToolsModule, only:checkOpenSegyFile
   implicit none
 
-  interface rw_binh
-     module procedure rw_binh_array,&
-          rw_binh_file,&
-          rw_binh_2byte_file,&
-          rw_binh_4byte_file
-  end interface rw_binh
+  interface readWordBinaryHeader
+     module procedure readWordBinaryHeaderFromArray,&
+          readWordBinaryHeaderFromFile,&
+          readWordBinaryHeaderTwoBytesFromFile,&
+          readWordBinaryHeaderFourBytesFromFile
+  end interface readWordBinaryHeader
 
-  interface chw_binh
-     module procedure chw_binh_array, chw_binh_file
-  end interface chw_binh
+  interface changeWordBinaryHeader
+     module procedure changeWordBinaryHeaderInArray, changeWordBinaryHeaderInFile
+  end interface changeWordBinaryHeader
 
 contains
 
   !read binary header to array from file  
-  function r_binh_array(filename)
+  function readBinHeaderToArray(filename)
 
     !in 
     character(len=*), intent(in):: filename
 
     !out
-    integer(kind=4), dimension(n_binaryh)::r_binh_array
+    integer(kind=4), dimension(BINARY_HEADER_SIZE)::readBinHeaderToArray
 
     !local
     integer(kind=4)::i,j,unit_number,flag,sum_bsize
@@ -56,23 +56,23 @@ contains
 
     !check if filneame is connected to any unit
     !if flag==-1, a new unit was openend and must be closed at program end
-    call check_open_segy_file(filename,unit_number,flag)
+    call checkOpenSegyFile(filename,unit_number,flag)
 
     sum_bsize=0
-    r_binh_array=0
+    readBinHeaderToArray=0
 
-    do i=1,size(bw_name)
+    do i=1,size(BINARY_WORD_NAME)
 
        !read word_in value as int*2 or int*4 according binaryw_size
        !the ouptut is int*4 always
-       sum_bsize=sum(bw_bsize(1:i-1))
-       select case(bw_bsize(i))
+       sum_bsize=sum(BINARY_WORD_BYTE_SIZE(1:i-1))
+       select case(BINARY_WORD_BYTE_SIZE(i))
        case(2)
-          read(unit=unit_number,pos=n_ebcdich+sum_bsize+1)word2b
-          r_binh_array(i)=int(word2b,kind=4)
+          read(unit=unit_number,pos=EBCDIC_HEADER_SIZE+sum_bsize+1)word2b
+          readBinHeaderToArray(i)=int(word2b,kind=4)
        case(4)
-          read(unit=unit_number,pos=n_ebcdich+sum_bsize+1)&
-               r_binh_array(i)
+          read(unit=unit_number,pos=EBCDIC_HEADER_SIZE+sum_bsize+1)&
+               readBinHeaderToArray(i)
        end select
 
     end do
@@ -81,19 +81,19 @@ contains
 
     return
 
-  end function r_binh_array
+  end function readBinHeaderToArray
 
   !=====================================================================
 
   !read binary header word from array
-  function rw_binh_array(binaryh_in,word_in)
+  function readWordBinaryHeaderFromArray(binaryh_in,word_in)
 
     !in
     integer(kind=4), intent(in), dimension(:)::binaryh_in
     character(len=*), intent(in)::word_in
 
     !out
-    integer(kind=4)::rw_binh_array
+    integer(kind=4)::readWordBinaryHeaderFromArray
 
     !local
     integer(kind=4)::i
@@ -101,13 +101,13 @@ contains
 
 
     !check if word exists
-    if(any(bw_name==word_in)) then
+    if(any(BINARY_WORD_NAME==word_in)) then
 
        !read word_in value as int*2 or int*4 according binaryw_size
        !the ouptut is int*4 always
 
-       word_pos=pack([(i,i=1,size(bw_name))],bw_name==word_in)
-       rw_binh_array=binaryh_in(word_pos(1))
+       word_pos=pack([(i,i=1,size(BINARY_WORD_NAME))],BINARY_WORD_NAME==word_in)
+       readWordBinaryHeaderFromArray=binaryh_in(word_pos(1))
 
        return
 
@@ -119,13 +119,13 @@ contains
     end if
 
 
-  end function rw_binh_array
+  end function readWordBinaryHeaderFromArray
 
 
   !=====================================================================
 
   !change binary header word in array
-  subroutine chw_binh_array(binaryh_in,word_in,val_in)
+  subroutine changeWordBinaryHeaderInArray(binaryh_in,word_in,val_in)
 
     !in
     integer(kind=4), intent(inout), dimension(:)::binaryh_in
@@ -138,12 +138,12 @@ contains
 
 
     !check if word exists
-    if(any(bw_name==word_in)) then
+    if(any(BINARY_WORD_NAME==word_in)) then
 
        !read word_in value as int*2 or int*4 according binaryw_size
        !the ouptut is int*4 always
 
-       word_pos=pack([(i,i=1,size(bw_name))],bw_name==word_in)
+       word_pos=pack([(i,i=1,size(BINARY_WORD_NAME))],BINARY_WORD_NAME==word_in)
        binaryh_in(word_pos(1))=val_in
 
        return
@@ -155,12 +155,12 @@ contains
 
     end if
 
-  end subroutine chw_binh_array
+  end subroutine changeWordBinaryHeaderInArray
 
   !=====================================================================
 
   !write binary header from array to file
-  subroutine w_binh_file(binaryh_in,filename)
+  subroutine writeBinaryHeaderToFile(binaryh_in,filename)
 
     !in 
     character(len=*), intent(in):: filename
@@ -171,29 +171,29 @@ contains
 
     !check if filneame is connected to any unit
     !if flag==-1, a new unit was openend and must be closed at program end
-    call check_open_segy_file(filename,unit_number,flag)
+    call checkOpenSegyFile(filename,unit_number,flag)
 
 
-    do i=1,size(bw_name)
+    do i=1,size(BINARY_WORD_NAME)
 
        !read word_in value as int*2 or int*4 according binaryw_size
        !the ouptut is int*4 always
-       sum_bsize=sum(bw_bsize(1:i-1))
+       sum_bsize=sum(BINARY_WORD_BYTE_SIZE(1:i-1))
 
-       select case(bw_bsize(i))
+       select case(BINARY_WORD_BYTE_SIZE(i))
        case(2)
-          write(unit=unit_number,pos=n_ebcdich+sum_bsize+1)&
+          write(unit=unit_number,pos=EBCDIC_HEADER_SIZE+sum_bsize+1)&
                int(binaryh_in(i),kind=2)
        case(4)
-          write(unit=unit_number,pos=n_ebcdich+sum_bsize+1)&
+          write(unit=unit_number,pos=EBCDIC_HEADER_SIZE+sum_bsize+1)&
                binaryh_in(i)
        end select
 
     end do
 
     !zeros to complete the header 
-    do i=sum(bw_bsize),n_binaryh-1
-       write(unit=unit_number,pos=n_ebcdich+i+1)&
+    do i=sum(BINARY_WORD_BYTE_SIZE),BINARY_HEADER_SIZE-1
+       write(unit=unit_number,pos=EBCDIC_HEADER_SIZE+i+1)&
             int(0,kind=1)
     end do
 
@@ -201,19 +201,19 @@ contains
     if(flag==-1)close(unit_number)       
 
 
-  end subroutine w_binh_file
+  end subroutine writeBinaryHeaderToFile
 
 
   !=====================================================================
 
   !read binary header word from file
-  function rw_binh_file(filename,word_in)
+  function readWordBinaryHeaderFromFile(filename,word_in)
 
     !in 
     character(len=*), intent(in):: filename,word_in
 
     !out
-    integer(kind=4)::rw_binh_file
+    integer(kind=4)::readWordBinaryHeaderFromFile
 
     !local
     integer(kind=4)::i,unit_number,flag,sum_bsize
@@ -223,24 +223,24 @@ contains
     sum_bsize=0
 
     !check if word exists
-    if(any(bw_name==word_in)) then
+    if(any(BINARY_WORD_NAME==word_in)) then
 
        !check if filneame is connected to any unit
        !if flag==-1, a new unit was openend and must be closed at program end
-       call check_open_segy_file(filename,unit_number,flag)
+       call checkOpenSegyFile(filename,unit_number,flag)
 
        !check word_in position inside binaryw_name
-       word_pos=pack([(i,i=1,size(bw_name))],bw_name==word_in)
+       word_pos=pack([(i,i=1,size(BINARY_WORD_NAME))],BINARY_WORD_NAME==word_in)
 
        !read word_in value as int*2 or int*4 according binaryw_size
        !the ouptut is int*4 always
-       sum_bsize=sum(bw_bsize(1:word_pos(1)-1))
-       select case(bw_bsize(word_pos(1)))
+       sum_bsize=sum(BINARY_WORD_BYTE_SIZE(1:word_pos(1)-1))
+       select case(BINARY_WORD_BYTE_SIZE(word_pos(1)))
        case(2)
-          read(unit=unit_number,pos=n_ebcdich+sum_bsize+1)word2b
-          rw_binh_file=int(word2b,kind=4)
+          read(unit=unit_number,pos=EBCDIC_HEADER_SIZE+sum_bsize+1)word2b
+          readWordBinaryHeaderFromFile=int(word2b,kind=4)
        case(4)
-          read(unit=unit_number,pos=n_ebcdich+sum_bsize+1)rw_binh_file
+          read(unit=unit_number,pos=EBCDIC_HEADER_SIZE+sum_bsize+1)readWordBinaryHeaderFromFile
        end select
 
        if(flag==-1)close(unit_number)       
@@ -255,78 +255,78 @@ contains
     end if
 
 
-  end function rw_binh_file
+  end function readWordBinaryHeaderFromFile
 
     !=====================================================================
 
   !read binary header word from file, at a given byte
-  function rw_binh_2byte_file(filename,byte_in)
+  function readWordBinaryHeaderTwoBytesFromFile(filename,byte_in)
 
     !in 
     character(len=*), intent(in):: filename
     integer(kind=2), intent(in)::byte_in
 
     !out
-    integer(kind=2)::rw_binh_2byte_file
+    integer(kind=2)::readWordBinaryHeaderTwoBytesFromFile
 
     !local
     integer(kind=4)::i,unit_number,flag,sum_bsize
     integer(kind=4), dimension(1)::word_pos
     
-    if(byte_in+2.gt.n_binaryh)then
+    if(byte_in+2.gt.BINARY_HEADER_SIZE)then
        write(*,*)'Byte out of boundaries'
        stop
     end if
 
     !check if filneame is connected to any unit
     !if flag==-1, a new unit was openend and must be closed at program end
-    call check_open_segy_file(filename,unit_number,flag)
+    call checkOpenSegyFile(filename,unit_number,flag)
 
-    read(unit=unit_number,pos=n_ebcdich+byte_in)rw_binh_2byte_file
+    read(unit=unit_number,pos=EBCDIC_HEADER_SIZE+byte_in)readWordBinaryHeaderTwoBytesFromFile
     
     if(flag==-1)close(unit_number)   
 
     return
 
-  end function rw_binh_2byte_file
+  end function readWordBinaryHeaderTwoBytesFromFile
 
   !=====================================================================
 
   !read binary header word from file, at a given byte
-  function rw_binh_4byte_file(filename,byte_in)
+  function readWordBinaryHeaderFourBytesFromFile(filename,byte_in)
 
     !in 
     character(len=*), intent(in):: filename
     integer(kind=4), intent(in)::byte_in
 
     !out
-    integer(kind=4)::rw_binh_4byte_file
+    integer(kind=4)::readWordBinaryHeaderFourBytesFromFile
 
     !local
     integer(kind=4)::i,unit_number,flag,sum_bsize
     integer(kind=4), dimension(1)::word_pos
     
-    if(byte_in+4.gt.n_binaryh)then
+    if(byte_in+4.gt.BINARY_HEADER_SIZE)then
        write(*,*)'Byte out of boundaries'
        stop
     end if
 
     !check if filneame is connected to any unit
     !if flag==-1, a new unit was openend and must be closed at program end
-    call check_open_segy_file(filename,unit_number,flag)
+    call checkOpenSegyFile(filename,unit_number,flag)
 
-    read(unit=unit_number,pos=n_ebcdich+byte_in)rw_binh_4byte_file
+    read(unit=unit_number,pos=EBCDIC_HEADER_SIZE+byte_in)readWordBinaryHeaderFourBytesFromFile
     
     if(flag==-1)close(unit_number)   
 
     return
 
-  end function rw_binh_4byte_file
+  end function readWordBinaryHeaderFourBytesFromFile
 
   !=====================================================================
 
   !change binary header word in file
-  subroutine chw_binh_file(filename,word_in,val_in)
+  subroutine changeWordBinaryHeaderInFile(filename,word_in,val_in)
 
     !in 
     character(len=*), intent(in):: filename,word_in
@@ -337,22 +337,22 @@ contains
     integer(kind=4), dimension(1)::word_pos
 
     !check if word exists
-    if(any(bw_name==word_in)) then
+    if(any(BINARY_WORD_NAME==word_in)) then
 
        !check if filneame is connected to any unit
        !if flag==-1, a new unit was openend and must be closed at program end
-       call check_open_segy_file(filename,unit_number,flag)
+       call checkOpenSegyFile(filename,unit_number,flag)
 
-       word_pos=pack([(i,i=1,size(bw_name))],bw_name==word_in)
+       word_pos=pack([(i,i=1,size(BINARY_WORD_NAME))],BINARY_WORD_NAME==word_in)
 
        !read word_in value as int*2 or int*4 according binaryw_size
        !the ouptut is int*4 always
-       sum_bsize=sum(bw_bsize(1:word_pos(1)-1))
-       select case(bw_bsize(word_pos(1)))
+       sum_bsize=sum(BINARY_WORD_BYTE_SIZE(1:word_pos(1)-1))
+       select case(BINARY_WORD_BYTE_SIZE(word_pos(1)))
        case(2)
-          write(unit=unit_number,pos=n_ebcdich+sum_bsize+1)int(val_in,2)
+          write(unit=unit_number,pos=EBCDIC_HEADER_SIZE+sum_bsize+1)int(val_in,2)
        case(4)
-          write(unit=unit_number,pos=n_ebcdich+sum_bsize+1)val_in
+          write(unit=unit_number,pos=EBCDIC_HEADER_SIZE+sum_bsize+1)val_in
        end select
 
 
@@ -365,12 +365,12 @@ contains
 
     end if
 
-  end subroutine chw_binh_file
+  end subroutine changeWordBinaryHeaderInFile
 
   !=====================================================================
 
   !print binary header from file, to another file or screen
-  subroutine print_binary_header(filename,file_out)
+  subroutine printBinaryHeader(filename,file_out)
 
     !in
     character(len=*), intent(in)::filename,file_out
@@ -415,17 +415,17 @@ contains
          "Vibratory polarity code"/)
 
     do i=1,size(def_array)
-       write(unit_number,100)rw_binh_file(filename,bw_name(i)),def_array(i)
+       write(unit_number,100)readWordBinaryHeaderFromFile(filename,BINARY_WORD_NAME(i)),def_array(i)
     end do
 
 100 format(I10,2X,A65,1X)
 
-  end subroutine  print_binary_header
+  end subroutine  printBinaryHeader
 
 
   !=====================================================================
 
 
-end module binary_reel_header_mod
+end module BinaryReelHeaderModule
 
 

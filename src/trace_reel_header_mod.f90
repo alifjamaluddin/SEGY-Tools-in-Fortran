@@ -17,32 +17,32 @@
 ! ---------------------------------------------------------------------------
 
 
-module trace_reel_header_mod
+module TraceReelHeaderModule
 
-  use word_definitions_mod, only:tw_name,tw_bsize,&
-       n_ebcdich,n_binaryh,n_traceh
-  use binary_reel_header_mod, only:rw_binh_file
-  use read_segy_tools_mod, only:check_open_segy_file
+  use WordDefinitionModule, only:TRACE_WORD_NAME,TRACE_WORD_BYTE_SIZE,&
+       EBCDIC_HEADER_SIZE,BINARY_HEADER_SIZE,TRACE_HEADER_SIZE
+  use BinaryReelHeaderModule, only:readWordBinaryHeaderFromFile
+  use ReadSegyToolsModule, only:checkOpenSegyFile
   implicit none
 
-  interface rw_trch
-     module procedure rw_trch_array, rw_trch_file
-  end interface rw_trch
+  interface readWordTraceHeader
+     module procedure readWordTraceHeaderToArray, readWordTraceHeaderInFile
+  end interface readWordTraceHeader
 
-  interface chw_trch
-     module procedure chw_trch_array, chw_trch_file
-  end interface chw_trch
+  interface changeWordTraceHeader
+     module procedure changeWordTraceHeaderInArray, changeWordTraceHeaderInFile
+  end interface changeWordTraceHeader
   
 contains
 
-  function r_trch_array(filename,ntrace)
+  function readTraceHeaderToArray(filename,ntrace)
 
     !in 
     character(len=*), intent(in)::filename
     integer(kind=4), intent(in)::ntrace
     
     !out
-    integer(kind=4), dimension(n_traceh)::r_trch_array
+    integer(kind=4), dimension(TRACE_HEADER_SIZE)::readTraceHeaderToArray
 
     !local
     integer(kind=4)::i,j,unit_number,flag,sum_bsize,nsamples
@@ -51,27 +51,27 @@ contains
 
     !check if filneame is connected to any unit
     !if flag==-1, a new unit was openend and must be closed at program end
-    call check_open_segy_file(filename,unit_number,flag)
+    call checkOpenSegyFile(filename,unit_number,flag)
 
-    r_trch_array=0
+    readTraceHeaderToArray=0
     
-    do i=1,size(tw_name)
+    do i=1,size(TRACE_WORD_NAME)
        
        !saples_number by traces, from binary header
-       nsamples=rw_binh_file(filename,'ns')
+       nsamples=readWordBinaryHeaderFromFile(filename,'ns')
        
        !read word_in value as int*2 or int*4 according binaryw_size
        !the ouptut is int*4 always
-       sum_bsize=sum(tw_bsize(1:i-1))
-       select case(tw_bsize(i))
+       sum_bsize=sum(TRACE_WORD_BYTE_SIZE(1:i-1))
+       select case(TRACE_WORD_BYTE_SIZE(i))
        case(2)
           read(unit=unit_number,&
-               pos=n_ebcdich+n_binaryh+(ntrace-1)*(n_traceh+4*nsamples)+sum_bsize+1)word2b
-          r_trch_array(i)=int(word2b,kind=4)
+               pos=EBCDIC_HEADER_SIZE+BINARY_HEADER_SIZE+(ntrace-1)*(TRACE_HEADER_SIZE+4*nsamples)+sum_bsize+1)word2b
+          readTraceHeaderToArray(i)=int(word2b,kind=4)
        case(4)
           read(unit=unit_number,&
-               pos=n_ebcdich+n_binaryh+(ntrace-1)*(n_traceh+4*nsamples)+sum_bsize+1)&
-               r_trch_array(i)
+               pos=EBCDIC_HEADER_SIZE+BINARY_HEADER_SIZE+(ntrace-1)*(TRACE_HEADER_SIZE+4*nsamples)+sum_bsize+1)&
+               readTraceHeaderToArray(i)
        end select
        
     end do
@@ -80,19 +80,19 @@ contains
     
     return
     
-  end function r_trch_array
+  end function readTraceHeaderToArray
 
   !=====================================================================
 
   !read binary header word from array
-  function rw_trch_array(traceh_in,word_in)
+  function readWordTraceHeaderToArray(traceh_in,word_in)
     
     !in
     integer(kind=4), intent(in), dimension(:)::traceh_in
     character(len=*), intent(in)::word_in
     
     !out
-    integer(kind=4)::rw_trch_array
+    integer(kind=4)::readWordTraceHeaderToArray
     
     !local
     integer(kind=4)::i
@@ -100,13 +100,13 @@ contains
     
     
     !check if word exists
-    if(any(tw_name==word_in)) then
+    if(any(TRACE_WORD_NAME==word_in)) then
        
        !read word_in value as int*2 or int*4 according binaryw_size
        !the ouptut is int*4 always
        
-       word_pos=pack([(i,i=1,size(tw_name))],tw_name==word_in)
-       rw_trch_array=traceh_in(word_pos(1))
+       word_pos=pack([(i,i=1,size(TRACE_WORD_NAME))],TRACE_WORD_NAME==word_in)
+       readWordTraceHeaderToArray=traceh_in(word_pos(1))
        
        return
        
@@ -118,13 +118,13 @@ contains
     end if
     
     
-  end function rw_trch_array
+  end function readWordTraceHeaderToArray
 
 
   !=====================================================================
 
   !change binary header word from array
-  subroutine chw_trch_array(traceh_in,word_in,val_in)
+  subroutine changeWordTraceHeaderInArray(traceh_in,word_in,val_in)
 
     !in
     integer(kind=4), intent(inout), dimension(:)::traceh_in
@@ -136,12 +136,12 @@ contains
     integer(kind=4), dimension(1)::word_pos
     
     !check if word exists
-    if(any(tw_name==word_in)) then
+    if(any(TRACE_WORD_NAME==word_in)) then
        
        !read word_in value as int*2 or int*4 according binaryw_size
        !the ouptut is int*4 always
 
-       word_pos=pack([(i,i=1,size(tw_name))],tw_name==word_in)
+       word_pos=pack([(i,i=1,size(TRACE_WORD_NAME))],TRACE_WORD_NAME==word_in)
        traceh_in(word_pos(1))=val_in
 
        return
@@ -153,11 +153,11 @@ contains
 
     end if
 
-  end subroutine chw_trch_array
+  end subroutine changeWordTraceHeaderInArray
   
   !=====================================================================
 
-  subroutine w_trch_file(traceh_in,ntrace,filename)
+  subroutine writeTraceHeaderInFile(traceh_in,ntrace,filename)
 
     !in 
     character(len=*), intent(in):: filename
@@ -169,29 +169,29 @@ contains
     
     !check if filneame is connected to any unit
     !if flag==-1, a new unit was openend and must be closed at program end
-    call check_open_segy_file(filename,unit_number,flag)
+    call checkOpenSegyFile(filename,unit_number,flag)
 
     !saples_number by traces, from binary header
-    nsamples=rw_trch_array(traceh_in,'ns')
+    nsamples=readWordTraceHeaderToArray(traceh_in,'ns')
 
-    do i=1,size(tw_name)
+    do i=1,size(TRACE_WORD_NAME)
                     
        !read word_in value as int*2 or int*4 according binaryw_size
        !the ouptut is int*4 always
-       sum_bsize=sum(tw_bsize(1:i-1))
+       sum_bsize=sum(TRACE_WORD_BYTE_SIZE(1:i-1))
       
        
-       select case(tw_bsize(i))
+       select case(TRACE_WORD_BYTE_SIZE(i))
        case(2)
           
           write(unit=unit_number,&
-               pos=n_ebcdich+n_binaryh+(ntrace-1)*(n_traceh+4*nsamples)+sum_bsize+1)&
+               pos=EBCDIC_HEADER_SIZE+BINARY_HEADER_SIZE+(ntrace-1)*(TRACE_HEADER_SIZE+4*nsamples)+sum_bsize+1)&
                int(traceh_in(i),kind=2)
          
        case(4)
        
           write(unit=unit_number,&
-               pos=n_ebcdich+n_binaryh+(ntrace-1)*(n_traceh+4*nsamples)+sum_bsize+1)&
+               pos=EBCDIC_HEADER_SIZE+BINARY_HEADER_SIZE+(ntrace-1)*(TRACE_HEADER_SIZE+4*nsamples)+sum_bsize+1)&
                traceh_in(i)
          
        end select
@@ -199,26 +199,26 @@ contains
     end do
 
     !zeros to complete the header 
-    do i=sum(tw_bsize),n_traceh-1
-       write(unit=unit_number,pos=n_ebcdich+n_binaryh+(ntrace-1)*(n_traceh+4*nsamples)+i+1)&
+    do i=sum(TRACE_WORD_BYTE_SIZE),TRACE_HEADER_SIZE-1
+       write(unit=unit_number,pos=EBCDIC_HEADER_SIZE+BINARY_HEADER_SIZE+(ntrace-1)*(TRACE_HEADER_SIZE+4*nsamples)+i+1)&
             int(0,kind=1)
     end do
     
     if(flag==-1)close(unit_number)       
          
     
-  end subroutine w_trch_file
+  end subroutine writeTraceHeaderInFile
   
   !=====================================================================
   
-  function rw_trch_file(filename,ntrace,word_in)
+  function readWordTraceHeaderInFile(filename,ntrace,word_in)
 
     !in 
     character(len=*), intent(in):: filename,word_in
     integer(kind=4), intent(in)::ntrace
     
     !out
-    integer(kind=4)::rw_trch_file
+    integer(kind=4)::readWordTraceHeaderInFile
 
     !local
     integer(kind=4)::i,unit_number,flag,sum_bsize,nsamples
@@ -229,35 +229,35 @@ contains
     sum_bsize=0
     
     !check if word exists
-    if(any(tw_name==word_in)) then
+    if(any(TRACE_WORD_NAME==word_in)) then
 
        !check if filneame is connected to any unit
        !if flag==-1, a new unit was openend and must be closed at program end
-       call check_open_segy_file(filename,unit_number,flag)
+       call checkOpenSegyFile(filename,unit_number,flag)
 
          
        !saples_number by traces, from binary header
-       nsamples=rw_binh_file(filename,'ns')
+       nsamples=readWordBinaryHeaderFromFile(filename,'ns')
        
        !check word_in position inside tracew_name
-       word_pos=pack([(i,i=1,size(tw_name))],tw_name==word_in)
+       word_pos=pack([(i,i=1,size(TRACE_WORD_NAME))],TRACE_WORD_NAME==word_in)
      
        !read word_in value as int*2 or int*4 according tracew_size
        !the ouptut is int*4 always
-       sum_bsize=sum(tw_bsize(1:word_pos(1)-1))
+       sum_bsize=sum(TRACE_WORD_BYTE_SIZE(1:word_pos(1)-1))
        
        
-       select case(tw_bsize(word_pos(1)))
+       select case(TRACE_WORD_BYTE_SIZE(word_pos(1)))
        case(2)
           
           read(unit=unit_number,&
-               pos=n_ebcdich+n_binaryh+(ntrace-1)*(n_traceh+4*nsamples)+sum_bsize+1)word2b
-          rw_trch_file=int(word2b,kind=4)
+               pos=EBCDIC_HEADER_SIZE+BINARY_HEADER_SIZE+(ntrace-1)*(TRACE_HEADER_SIZE+4*nsamples)+sum_bsize+1)word2b
+          readWordTraceHeaderInFile=int(word2b,kind=4)
           
        case(4)
        
           read(unit=unit_number,&
-               pos=n_ebcdich+n_binaryh+(ntrace-1)*(n_traceh+4*nsamples)+sum_bsize+1)rw_trch_file
+               pos=EBCDIC_HEADER_SIZE+BINARY_HEADER_SIZE+(ntrace-1)*(TRACE_HEADER_SIZE+4*nsamples)+sum_bsize+1)readWordTraceHeaderInFile
           
           
        end select
@@ -274,11 +274,11 @@ contains
     end if
 
 
-  end function rw_trch_file
+  end function readWordTraceHeaderInFile
 
   !=====================================================================
 
-  subroutine chw_trch_file(filename,ntrace,word_in,val_in)
+  subroutine changeWordTraceHeaderInFile(filename,ntrace,word_in,val_in)
 
     !in 
     character(len=*), intent(in):: filename,word_in
@@ -291,28 +291,28 @@ contains
     sum_bsize=0
     
     !check if word exists
-    if(any(tw_name==word_in)) then
+    if(any(TRACE_WORD_NAME==word_in)) then
 
        !check if filneame is connected to any unit
        !if flag==-1, a new unit was openend and must be closed at program end
-       call check_open_segy_file(filename,unit_number,flag)
+       call checkOpenSegyFile(filename,unit_number,flag)
        
        !saples_number by traces, from binary header
-       nsamples=rw_binh_file(filename,'ns')
+       nsamples=readWordBinaryHeaderFromFile(filename,'ns')
 
-       !word position in tw_name array
-       word_pos=pack([(i,i=1,size(tw_name))],tw_name==word_in)
+       !word position in TRACE_WORD_NAME array
+       word_pos=pack([(i,i=1,size(TRACE_WORD_NAME))],TRACE_WORD_NAME==word_in)
 
        !read word_in value as int*2 or int*4 according binaryw_size
        !the ouptut is int*4 always
-       sum_bsize=sum(tw_bsize(1:word_pos(1)-1))
-       select case(tw_bsize(word_pos(1)))
+       sum_bsize=sum(TRACE_WORD_BYTE_SIZE(1:word_pos(1)-1))
+       select case(TRACE_WORD_BYTE_SIZE(word_pos(1)))
        case(2)
           write(unit=unit_number,&
-               pos=n_ebcdich+n_binaryh+(ntrace-1)*(n_traceh+4*nsamples)+sum_bsize+1)int(val_in,2)
+               pos=EBCDIC_HEADER_SIZE+BINARY_HEADER_SIZE+(ntrace-1)*(TRACE_HEADER_SIZE+4*nsamples)+sum_bsize+1)int(val_in,2)
        case(4)
           write(unit=unit_number,&
-               pos=n_ebcdich+n_binaryh+(ntrace-1)*(n_traceh+4*nsamples)+sum_bsize+1)val_in
+               pos=EBCDIC_HEADER_SIZE+BINARY_HEADER_SIZE+(ntrace-1)*(TRACE_HEADER_SIZE+4*nsamples)+sum_bsize+1)val_in
        end select
       
        
@@ -325,11 +325,11 @@ contains
 
     end if
     
-  end subroutine chw_trch_file
+  end subroutine changeWordTraceHeaderInFile
   
   !=========================================================================
 
-  subroutine print_trace_header(filename,ntrace,file_out)
+  subroutine printTraceHeader(filename,ntrace,file_out)
 
     !in
     character(len=*), intent(in)::filename,file_out
@@ -421,17 +421,17 @@ contains
 
     
     do i=1,size(def_array)
-       write(unit_number,100)rw_trch(filename,ntrace,tw_name(i)),def_array(i)
+       write(unit_number,100)readWordTraceHeader(filename,ntrace,TRACE_WORD_NAME(i)),def_array(i)
     end do
 
 100 format(I10,2X,A65)
 
     
-  end subroutine print_trace_header
+  end subroutine printTraceHeader
 
     
   
-end module trace_reel_header_mod
+end module TraceReelHeaderModule
 
 
   

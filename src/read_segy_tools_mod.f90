@@ -16,10 +16,10 @@
 ! email: perez.daniel.omar@gmail.com
 ! ---------------------------------------------------------------------------
 
-module read_segy_tools_mod
+module ReadSegyToolsModule
 
-  use word_definitions_mod, only:&
-       ebcdic_table
+  use WordDefinitionModule, only:&
+       EBCDIC_TABLE
   
 
   
@@ -27,49 +27,49 @@ contains
 
   !==========================================================================
 
-  function ebcdic_to_ascii(ebcdic_in)
+  function EBCDICtoASCII(ebcdic_in)
 
     !in
     character(len=1)::ebcdic_in
 
     !out
-    character(len=1)::ebcdic_to_ascii
+    character(len=1)::EBCDICtoASCII
 
     !local
     character(len=1)::aux
     integer (kind=4)::i
   
-    ebcdic_to_ascii=char(ebcdic_table(ichar(ebcdic_in)+1))
+    EBCDICtoASCII=char(EBCDIC_TABLE(ichar(ebcdic_in)+1))
   
     return
     
-  end function ebcdic_to_ascii
+  end function EBCDICtoASCII
 
   !==========================================================================
 
-  function ascii_to_ebcdic(ascii_in)
+  function ASCIIToEBCDIC(ascii_in)
 
     !in
     character(len=1)::ascii_in
 
     !out
-    character(len=1)::ascii_to_ebcdic
+    character(len=1)::ASCIIToEBCDIC
 
     !local
     integer(kind=4)::i
     integer(kind=4), dimension(1)::pos
     
-    pos=pack([(i,i=1,256)],ebcdic_table==(ichar(ascii_in)))
-    ascii_to_ebcdic=char(pos(1)-1)
+    pos=pack([(i,i=1,256)],EBCDIC_TABLE==(ichar(ascii_in)))
+    ASCIIToEBCDIC=char(pos(1)-1)
         
     
     return
     
-  end function ascii_to_ebcdic
+  end function ASCIIToEBCDIC
 
   !==========================================================================
 
-  subroutine check_file_exists(file_in)
+  subroutine checkFileExists(file_in)
     
     character(len=*):: file_in
     ! variables de la info del archivo
@@ -82,11 +82,11 @@ contains
        stop
     end if
     
-  end subroutine check_file_exists
+  end subroutine checkFileExists
 
   !==========================================================================
     
-  subroutine check_open_segy_file(file_in,unit_number,flag)
+  subroutine checkOpenSegyFile(file_in,unit_number,flag)
     
     character(len=*):: file_in
     integer(kind=4)::unit_number,flag
@@ -109,7 +109,7 @@ contains
             convert = 'native')
     end if
     
-  end subroutine check_open_segy_file
+  end subroutine checkOpenSegyFile
   
   
-end module read_segy_tools_mod
+end module ReadSegyToolsModule

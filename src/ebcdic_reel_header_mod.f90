@@ -17,15 +17,15 @@
 ! ---------------------------------------------------------------------------
 
 
-module ebcdic_reel_header_mod
+module EBCDICReelHeaderModule
 
-  use word_definitions_mod, only:&
+  use WordDefinitionModule, only:&
        ebcdich,&
-       n_ebcdich
-  use read_segy_tools_mod, only:&
-       ebcdic_to_ascii,&
-       ascii_to_ebcdic,&
-       check_open_segy_file
+       EBCDIC_HEADER_SIZE
+  use ReadSegyToolsModule, only:&
+       EBCDICtoASCII,&
+       ASCIIToEBCDIC,&
+       checkOpenSegyFile
 
   implicit none
   
@@ -34,13 +34,13 @@ contains
 
   !======================================================================
 
-  function r_ebch_array(filename)
+  function readEBCDICHeader(filename)
 
     !in 
     character(len=*), intent(in):: filename
     
     !out
-    character(len=1), dimension(n_ebcdich) :: r_ebch_array
+    character(len=1), dimension(EBCDIC_HEADER_SIZE) :: readEBCDICHeader
 
     !local
     integer(kind=4)::unit_number,flag,i
@@ -48,24 +48,24 @@ contains
     
     !check if filneame is connected to any unit
     !if flag==-1, a new unit was openend and must be closed at program end
-    call check_open_segy_file(filename,unit_number,flag)
+    call checkOpenSegyFile(filename,unit_number,flag)
 
-    do i=1,n_ebcdich
+    do i=1,EBCDIC_HEADER_SIZE
        read(unit=unit_number,pos=i)ebcdic_ch
-       r_ebch_array(i)=ebcdic_to_ascii(ebcdic_ch)
+       readEBCDICHeader(i)=EBCDICtoASCII(ebcdic_ch)
     end do
        
     if(flag==-1)close(unit_number)
 
     return
     
-  end function r_ebch_array
+  end function readEBCDICHeader
 
 
   !======================================================================
   
 
-  subroutine w_ebch_file(ebcdich_in,filename)
+  subroutine writeEBCDICHeader(ebcdich_in,filename)
 
     !in 
     character(len=*), intent(in):: filename
@@ -76,15 +76,15 @@ contains
     
     !check if filneame is connected to any unit
     !if flag==-1, a new unit was openend and must be closed at program end
-    call check_open_segy_file(filename,unit_number,flag)
+    call checkOpenSegyFile(filename,unit_number,flag)
 
     do i=1,size(ebcdich_in)
-       write(unit=unit_number,pos=i)ascii_to_ebcdic(ebcdich_in(i))
+       write(unit=unit_number,pos=i)ASCIIToEBCDIC(ebcdich_in(i))
     end do
 
     !empty spaces (yeah!!) to complete the header 
-    do i=size(ebcdich_in),n_ebcdich-1
-       write(unit=unit_number,pos=size(ebcdich_in)+i+1)ascii_to_ebcdic('')
+    do i=size(ebcdich_in),EBCDIC_HEADER_SIZE-1
+       write(unit=unit_number,pos=size(ebcdich_in)+i+1)ASCIIToEBCDIC('')
     end do
     
     
@@ -92,17 +92,17 @@ contains
 
     return
     
-  end subroutine w_ebch_file
+  end subroutine writeEBCDICHeader
   
   !======================================================================
 
-  subroutine print_ebcdic_header(filename,file_out)
+  subroutine printEBCDICHeader(filename,file_out)
 
     !in
     character(len=*), intent(in)::filename,file_out
 
     !local
-    character(len=1), dimension(n_ebcdich) :: ebcdich
+    character(len=1), dimension(EBCDIC_HEADER_SIZE) :: ebcdich
     integer(kind=4)::unit_number,flag,i,j
 
     !check output unit
@@ -117,7 +117,7 @@ contains
     !the file is opened and the ebcdic header readed
     !call ebcdic_reel_header_read(filename,ebcdich)
 
-    ebcdich=r_ebch_array(filename)
+    ebcdich=readEBCDICHeader(filename)
     
     do i=1,40
        write(unit_number,*)(ebcdich(j+(i-1)*80),j=1,80)
@@ -126,9 +126,9 @@ contains
     !close opened unit 
     if(flag==-1)close(unit_number)
     
-  end subroutine print_ebcdic_header
+  end subroutine printEBCDICHeader
   
-end module ebcdic_reel_header_mod
+end module EBCDICReelHeaderModule
 
 
   

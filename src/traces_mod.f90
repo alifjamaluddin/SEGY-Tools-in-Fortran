@@ -17,31 +17,31 @@
 ! ---------------------------------------------------------------------------
 
 
-module traces_mod
+module TracesModule
 
-  use word_definitions_mod, only:tw_name,tw_bsize,&
-       n_ebcdich,n_binaryh,n_traceh
-  use trace_reel_header_mod, only:rw_trch_file
-  use read_segy_tools_mod, only:check_open_segy_file
+  use WordDefinitionModule, only:TRACE_WORD_NAME,TRACE_WORD_BYTE_SIZE,&
+       EBCDIC_HEADER_SIZE,BINARY_HEADER_SIZE,TRACE_HEADER_SIZE
+  use TraceReelHeaderModule, only:readWordTraceHeaderInFile
+  use ReadSegyToolsModule, only:checkOpenSegyFile
   
   implicit none
 
 contains
 
-  function r_trace(filename,ntrace,nsmin,nsmax)
+  function readTrace(filename,ntrace,nsmin,nsmax)
 
     !in 
     character(len=*), intent(in)::filename
     integer(kind=4), intent(in)::ntrace,nsmin,nsmax
 
     !out
-    real(kind=4), dimension(nsmax-nsmin+1)::r_trace
+    real(kind=4), dimension(nsmax-nsmin+1)::readTrace
 
     !local
     integer(kind=4)::flag,unit_number,i,nsamples
     
     !check if smin<=0 and smax>nsamples
-    nsamples=rw_trch_file(filename,ntrace,'ns')
+    nsamples=readWordTraceHeaderInFile(filename,ntrace,'ns')
     if((nsmin.lt.1).or.(nsmax.gt.nsamples))then
        write(*,*)'Range (nsmin,nsmax) out of trace boundaries'
        stop
@@ -49,12 +49,12 @@ contains
 
     !check if filneame is connected to any unit
     !if flag==-1, a new unit was openend and must be closed at program end
-    call check_open_segy_file(filename,unit_number,flag)
+    call checkOpenSegyFile(filename,unit_number,flag)
 
     !read trace samples
     do i=nsmin,nsmax
        read(unit=unit_number,&
-            pos=(n_ebcdich+n_binaryh+n_traceh)+(ntrace-1)*(n_traceh+4*nsamples)+1+4*(i-1))r_trace(i-nsmin+1)
+            pos=(EBCDIC_HEADER_SIZE+BINARY_HEADER_SIZE+TRACE_HEADER_SIZE)+(ntrace-1)*(TRACE_HEADER_SIZE+4*nsamples)+1+4*(i-1))readTrace(i-nsmin+1)
     end do
        
 
@@ -62,11 +62,11 @@ contains
 
     return
     
-  end function r_trace
+  end function readTrace
 
   !==========================================================================================================
 
-  subroutine w_trace(filename,trace,ntrace)
+  subroutine writeTrace(filename,trace,ntrace)
 
     !in
     character(len=*), intent(in)::filename
@@ -81,28 +81,28 @@ contains
     
     !check if filneame is connected to any unit
     !if flag==-1, a new unit was openend and must be closed at program end
-    call check_open_segy_file(filename,unit_number,flag)  
+    call checkOpenSegyFile(filename,unit_number,flag)  
 
     !write trace samples to file
     do i=1,nsamples
        write(unit=unit_number,&
-            pos=(n_ebcdich+n_binaryh+n_traceh)+(ntrace-1)*(n_traceh+4*nsamples)+1+4*(i-1))trace(i)
+            pos=(EBCDIC_HEADER_SIZE+BINARY_HEADER_SIZE+TRACE_HEADER_SIZE)+(ntrace-1)*(TRACE_HEADER_SIZE+4*nsamples)+1+4*(i-1))trace(i)
     end do
        
 
     if(flag==-1)close(unit_number) 
     
-  end subroutine w_trace
+  end subroutine writeTrace
 
 
-  function count_traces(filename,ns)
+  function countTraces(filename,ns)
 
     !in
     character(len=*), intent(in)::filename
     integer(kind=4), intent(in)::ns
 
     !out
-    integer(kind=4)::count_traces
+    integer(kind=4)::countTraces
 
     !local
     integer, dimension(13)::buff
@@ -110,33 +110,33 @@ contains
     
     call stat(filename, buff, status)
 
-    count_traces=(buff(8)-n_ebcdich-n_binaryh)/(n_traceh+ns*4)
+    countTraces=(buff(8)-EBCDIC_HEADER_SIZE-BINARY_HEADER_SIZE)/(TRACE_HEADER_SIZE+ns*4)
     
     return
 
-  end function count_traces
+  end function countTraces
 
-  function maxval_traces(filename,tmin,tmax,smin,smax)
+  function maxValTraces(filename,tmin,tmax,smin,smax)
 
     !in
     character(len=*), intent(in)::filename
     integer(kind=4), intent(in)::tmin,tmax,smin,smax
 
     !out
-    integer(kind=4)::maxval_traces
+    integer(kind=4)::maxValTraces
 
     !local
     integer::i
     real(kind=4)::mval_tmp
     
-    maxval_traces=maxval(abs(r_trace(filename,tmin,smin,smax)))
+    maxValTraces=maxval(abs(readTrace(filename,tmin,smin,smax)))
     do i=tmin+1,tmax
-       mval_tmp=maxval(abs(r_trace(filename,i,smin,smax)))
-       if(mval_tmp.gt.maxval_traces)maxval_traces=mval_tmp
+       mval_tmp=maxval(abs(readTrace(filename,i,smin,smax)))
+       if(mval_tmp.gt.maxValTraces)maxValTraces=mval_tmp
     end do
     
-  end function maxval_traces
+  end function maxValTraces
 
   
-end module traces_mod
+end module TracesModule
 
