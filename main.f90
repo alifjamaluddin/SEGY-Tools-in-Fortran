@@ -133,6 +133,7 @@ program main
                     call printTraceHeader(input_path, n_trace, 'screen')
                 end if
             end if
+        ! TODO: print trace header by word
         case ('pTW')
             if(.not. n_trace_set) then
                 n_trace = 1
